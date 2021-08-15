@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Popup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="third-party/bootstrap.min.css">
+    <link rel="stylesheet" href="third-party/awesomplete.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="nav nav-tabs d-flex align-items-center font-monospace mb-2" id="nav-tab" role="tablist">
+    <button class="nav-link active" id="conversion-tab" data-bs-toggle="tab" data-bs-target="#conversion" type="button"
+            role="tab" aria-controls="conversion" aria-selected="true">Conversion
+    </button>
+    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button"
+            role="tab" aria-controls="history" aria-selected="false">History
+    </button>
+</div>
+<div class="tab-content font-monospace" id="nav-tabContent">
+    <div class="tab-pane fade show active" id="conversion" role="tabpanel" aria-labelledby="conversion-tab">
+        <div class="row g-2 text-center">
+            <div class="col-4">Currency</div>
+            <div class="col-4">Amount</div>
+            <div class="col-1"></div>
+            <div class="col-3"></div>
+        </div>
+        <div class="row g-2">
+            <div class="col-4">
+                <div class="form-outline" id="currency-dropdowns"> <!-- Dropdowns --> </div>
+            </div>
+            <div class="col-4">
+                <div class="form-outline" id="currency-inputs"> <!-- Inputs --> </div>
+            </div>
+            <div class="col-1 d-flex flex-column" id="currency-buttons"> <!-- Buttons --> </div>
+            <div class="col-3" id="currency-statuses"> <!-- Statuses --> </div>
+        </div>
+        <button type="button" class="btn btn-primary rounded-pill m-2" id="add-currency">+</button>
+        <small class="text-primary">You can compare up to 5 currencies concurrently.</small>
+        <div class="container text-center alert alert-danger" id="conversion-error" role="alert"></div>
+    </div>
+    <div class="tab-pane fade container" id="history" role="tabpanel" aria-labelledby="history-tab">
+        <div class="row g-1 text-center">
+            <div class="col-6">Currency</div>
+            <div class="col-6">Compare against</div>
+        </div>
+        <div class="row g-1">
+            <div class="col-6">
+                <input class="form-control m-2 currencies" id="currency-1">
+            </div>
+            <div class="col-6">
+                <input class="form-control m-2 currencies" id="currency-2">
+            </div>
+        </div>
+        <div class="container text-center alert alert-danger" id="history-error" role="alert"></div>
+    </div>
+</div>
+<script src="third-party/jquery.min.js"></script>
+<script src="third-party/bootstrap.bundle.min.js"></script>
+<script src="third-party/awesomplete.min.js"></script>
+<script src="third-party/chart.min.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

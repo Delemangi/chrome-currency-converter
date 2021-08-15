@@ -1,0 +1,27 @@
+body {
+    width: 700px;
+    height: 475px;
+}
+
+button.buttons {
+    height: 30px;
+}
+
+p.info {
+    margin-left: 8px;
+}
+
+div#currency-statuses p {
+    height: 54px;
+    line-height: 54px;
+    margin-bottom: 0
+}
+
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
