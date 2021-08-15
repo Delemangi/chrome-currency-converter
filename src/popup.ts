@@ -7,16 +7,16 @@ let currentCurrencies: number = 0;
 let currentID: number = 1;
 let currenciesList: string[];
 let validCurrenciesList: string[];
+let conversionErrorShown: boolean = false;
+let historyErrorShown: boolean = false;
 
 let APIKey: string;
 let cacheTime: number;
 
-chrome.storage.local.get(["currencies", "validCurrencies"], ({currencies, validCurrencies}) => {
-    currenciesList = currencies;
-    validCurrenciesList = validCurrencies;
-})
+chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime"], (result) => {
+    currenciesList = result.currencies;
+    validCurrenciesList = result.validCurrencies;
 
-chrome.storage.local.get(["APIKey", "cacheTime"], (result) => {
     if (result.APIKey !== undefined) {
         APIKey = result.APIKey;
     }
@@ -27,14 +27,54 @@ chrome.storage.local.get(["APIKey", "cacheTime"], (result) => {
 })
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.hasOwnProperty("APIKeyChanged")) {
-        APIKey = message["APIKeyChanged"];
+    if (message.hasOwnProperty("NewAPIKey")) {
+        APIKey = message["NewAPIKey"];
     }
 
-    if (message.hasOwnProperty("cacheTimeChanged")) {
-        cacheTime = message["cacheTimeChanged"];
+    if (message.hasOwnProperty("NewCacheTime")) {
+        cacheTime = message["NewCacheTime"];
     }
 })
+
+function sleep(time: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, time));
+}
+
+function isValidCurrency(currency: any): boolean {
+    return validCurrenciesList.includes(currency);
+}
+
+function getID(element: any): number {
+    // JQuery HTMLElement
+    if (element.hasOwnProperty("target")) {
+        return element.target.id.toString().split("-")[1];
+    }
+    // JS HTMLElement
+    else {
+        return element.id.toString().split("-")[1];
+    }
+}
+
+function getURL(from: string, to: string, mode: number): string {
+    if (APIKey !== undefined) {
+        // Currency conversion
+        if (mode === 1) {
+            return "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=" + from + "&to_currency=" + to + "&apikey=" + APIKey;
+        }
+        // Currency history
+        else if (mode === 2) {
+            return "https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=" + from + "&to_symbol=" + to + "&apikey=" + APIKey;
+        }
+        // None of the above
+        else {
+            return "";
+        }
+    }
+    // API key not set
+    else {
+        return "";
+    }
+}
 
 jQuery(() => {
     initConversion();
@@ -44,7 +84,7 @@ jQuery(() => {
     $("#history-error").hide();
 })
 
-function initConversion() {
+function initConversion(): void {
     for (let i = 0; i < initialCurrencies; i++) {
         addCurrency();
     }
@@ -56,7 +96,7 @@ function initConversion() {
     $(".buttons").prop("disabled", true);
 }
 
-function initHistory() {
+function initHistory(): void {
     let element1: HTMLElement | null = document.getElementById("currency-1");
     let element2: HTMLElement | null = document.getElementById("currency-2");
 
@@ -75,46 +115,7 @@ function initHistory() {
     })
 }
 
-function sleep(time: number) {
-    return new Promise(resolve => setTimeout(resolve, time));
-}
-
-function isValidCurrency(currency: any) {
-    return validCurrenciesList.includes(currency);
-}
-
-function getID(element: any) {
-    // HTMLElement
-    if (element.hasOwnProperty("target")) {
-        return +element.target.id.toString().split("-")[1];
-    }
-    // JQuery<HTMLElement>
-    else {
-        return +element.id.toString().split("-")[1];
-    }
-}
-
-function getURL(from: string, to: string, mode: number) {
-    // API key not set
-    if (APIKey === undefined) {
-        return "";
-    }
-
-    // Currency conversion
-    if (mode === 1) {
-        return "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=" + from + "&to_currency=" + to + "&apikey=" + APIKey;
-    }
-    // Currency history
-    else if (mode === 2) {
-        return "https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=" + from + "&to_symbol=" + to + "&apikey=" + APIKey;
-    }
-    // None of the above
-    else {
-        return "";
-    }
-}
-
-function setDropdown(element: HTMLElement | null) {
+function setDropdown(element: HTMLElement | null): void {
     if (element !== null) {
         let ap = new Awesomplete(element, {
             list: currenciesList,
@@ -125,7 +126,7 @@ function setDropdown(element: HTMLElement | null) {
     }
 }
 
-function addCurrency() {
+function addCurrency(): void {
     if (currentCurrencies + 1 === maxCurrencies) {
         $("#add-currency").prop("disabled", true);
     }
@@ -141,7 +142,7 @@ function addCurrency() {
     $(".buttons").prop("disabled", false);
 }
 
-function initDropdown() {
+function initDropdown(): void {
     $("#currency-dropdowns").append("<input class=\"form-control m-2 dropdowns\" id=\"dropdown-" + currentID + "\">");
 
     setDropdown(document.getElementById("dropdown-" + currentID));
@@ -160,8 +161,6 @@ function initDropdown() {
                     let from: any = $(i).val();
                     let value: any = $("#input-" + getID(i)).val();
 
-                    console.log(getID(i));
-
                     if (from === to)
                         continue;
 
@@ -177,7 +176,7 @@ function initDropdown() {
     })
 }
 
-function initInput() {
+function initInput(): void {
     $("#currency-inputs").append("<div class=\"awesomplete\"><input class=\"form-control m-2 inputs\" id=\"input-" + currentID + "\" type=\"number\"></div>")
     let input: any = $("#input-" + currentID);
 
@@ -206,7 +205,7 @@ function initInput() {
     })
 }
 
-function initButton() {
+function initButton(): void {
     $("#currency-buttons").append("<button class=\"btn-close m-2 buttons\" id=\"button-" + currentID + "\" type=\"button\" aria-label=\"Close\"></button>")
 
     $("#button-" + currentID).on("click", (element) => {
@@ -227,7 +226,7 @@ function initButton() {
     })
 }
 
-function initStatus() {
+function initStatus(): void {
     $("#currency-statuses").append("<p class=\"statuses\" id=\"status-" + currentID + "\"></p>");
     $("#status-" + currentID).text(phrases.selectCurrency);
 }
@@ -259,7 +258,7 @@ function getRate(from: any, to: any, value: any, ID: number) {
     })
 }
 
-function cacheRate(from: any, to: any, value: any, ID: number) {
+function cacheRate(from: any, to: any, value: any, ID: number): void {
     const key: string = from + "-" + to;
     const oppositeKey: string = to + "-" + from;
 
@@ -324,32 +323,44 @@ function cacheRate(from: any, to: any, value: any, ID: number) {
     })
 }
 
-function showConversionRate(rate: any, value: any, ID: number) {
+function showConversionRate(rate: any, value: any, ID: number): void {
     const status = $("#status-" + ID);
     const input = $("#input-" + ID);
 
-    if (!isNaN(rate)) {
+    // Valid rate
+    if (!isNaN(rate) && rate !== undefined) {
         input.val((value * rate).toFixed(2));
         status.text("");
-    } else if (isNaN(rate)) {
+    }
+    // Invalid rate
+    else if (isNaN(rate) || rate === undefined) {
         showConversionError(phrases.requestNotFinished);
         status.text("");
-    } else {
+    }
+    // Unknown error
+    else {
         status.text(phrases.requestFailed);
     }
 }
 
-function showConversionError(error: any) {
+function showConversionError(error: any): void {
     let element: any = $("#conversion-error");
 
-    element.show(500);
-    element.text(error);
-    sleep(5000).then(() => {
-        element.hide(500);
-    });
+    if (!conversionErrorShown) {
+        conversionErrorShown = true;
+
+        element.show(500);
+        element.text(error);
+        sleep(5000).then(() => {
+            element.hide(500);
+            conversionErrorShown = false;
+        });
+    } else {
+        element.text(error);
+    }
 }
 
-function getHistory(from: any, to: any) {
+function getHistory(from: any, to: any): void {
     const key: string = from + "~" + to;
     const oppositeKey: string = to + "~" + from;
 
@@ -372,7 +383,7 @@ function getHistory(from: any, to: any) {
     })
 }
 
-function cacheHistory(from: any, to: any) {
+function cacheHistory(from: any, to: any): void {
     const key: string = from + "~" + to;
     const oppositeKey: string = to + "~" + from;
 
@@ -437,16 +448,23 @@ function cacheHistory(from: any, to: any) {
     })
 }
 
-function showHistoryRate(from: any, to: any, history: any) {
+function showHistoryRate(from: any, to: any, history: any): void {
 //
 }
 
-function showHistoryError(error: any) {
+function showHistoryError(error: any): void {
     let element: any = $("#history-error");
 
-    element.show(500);
-    element.text(error);
-    sleep(5000).then(() => {
-        element.hide(500);
-    });
+    if (!historyErrorShown) {
+        historyErrorShown = true;
+
+        element.show(500);
+        element.text(error);
+        sleep(5000).then(() => {
+            element.hide(500);
+            historyErrorShown = false;
+        });
+    } else {
+        element.text(error);
+    }
 }

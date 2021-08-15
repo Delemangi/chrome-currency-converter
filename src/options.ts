@@ -1,5 +1,8 @@
 import * as phrases from "./phrases";
 
+let successShown: boolean = false;
+let errorShown: boolean = false;
+
 jQuery(() => {
     let APIKeyElement: any = $("#api");
     let cacheTimeElement: any = $("#cache");
@@ -16,8 +19,7 @@ jQuery(() => {
 
     APIKeyElement.on("change", () => {
         if (APIKeyElement.val() !== undefined && APIKeyElement.val() !== "") {
-            chrome.storage.local.set({"APIKey": APIKeyElement.val()});
-            chrome.runtime.sendMessage({"APIKeyChanged": APIKeyElement.val()});
+            chrome.runtime.sendMessage({"NewAPIKey": APIKeyElement.val()});
             showSuccess();
         } else {
             showOptionsError(phrases.emptyField);
@@ -26,8 +28,7 @@ jQuery(() => {
 
     cacheTimeElement.on("change", () => {
         if (cacheTimeElement.val() !== undefined && cacheTimeElement.val() !== "") {
-            chrome.storage.local.set({"cacheTime": +cacheTimeElement.val() * 1000});
-            chrome.runtime.sendMessage({"cacheTimeChanged": cacheTimeElement.val()});
+            chrome.runtime.sendMessage({"NewCacheTime": cacheTimeElement.val() * 1000});
             showSuccess();
         } else {
             showOptionsError(phrases.emptyField);
@@ -45,19 +46,33 @@ function sleep(time: number) {
 function showSuccess() {
     let element: any = $("#options-success");
 
-    element.show(500);
-    element.text(phrases.success);
-    sleep(5000).then(() => {
-        element.hide(500);
-    });
+    if (!successShown) {
+        successShown = true;
+
+        element.show(500);
+        element.text(phrases.saved);
+        sleep(5000).then(() => {
+            element.hide(500);
+            successShown = false;
+        });
+    } else {
+        element.text(phrases.saved);
+    }
 }
 
 function showOptionsError(error: any) {
     let element: any = $("#options-error");
 
-    element.show(500);
-    element.text(error);
-    sleep(5000).then(() => {
-        element.hide(500);
-    });
+    if (!errorShown) {
+        errorShown = true;
+
+        element.show(500);
+        element.text(error);
+        sleep(5000).then(() => {
+            element.hide(500);
+            errorShown = false;
+        });
+    } else {
+        element.text(error);
+    }
 }

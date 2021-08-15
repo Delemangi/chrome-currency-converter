@@ -9,7 +9,7 @@ export const requestFailed: string = "Failed to convert.";
 export const unexpectedResponse: string = "Unexpected response.";
 export const converting: string = "Converting...";
 export const emptyField: string = "Empty field.";
-export const success: string = "Success!";
+export const saved: string = "Saved!";
 export const notConfigured: string = "Go to options and configure the extension.";
 export const requestNotFinished: string = "The request has not finished.";
 

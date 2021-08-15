@@ -1,6 +1,18 @@
 import * as currencies from "./currencies.json";
 
+const cacheTime: number = 3600000; // Default: 1 hour
+
 chrome.storage.local.set({"cacheTime": 3600000});
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.hasOwnProperty("NewAPIKey")) {
+        chrome.storage.local.set({"APIKey": message["NewAPIKey"]});
+    }
+
+    if (message.hasOwnProperty("NewCacheTime")) {
+        chrome.storage.local.set({"cacheTime": message["NewCacheTime"]});
+    }
+})
 
 chrome.runtime.onInstalled.addListener(async ({reason}) => {
     if (reason == "install") {
