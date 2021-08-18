@@ -1,3 +1,4 @@
+import {showStatus} from "./functions";
 import * as phrases from "./phrases";
 import * as Awesomplete from "awesomplete";
 
@@ -7,8 +8,6 @@ let currentCurrencies: number = 0;
 let currentID: number = 1;
 let currenciesList: string[];
 let validCurrenciesList: string[];
-let conversionErrorShown: boolean = false;
-let historyErrorShown: boolean = false;
 
 let APIKey: string;
 let cacheTime: number;
@@ -35,10 +34,6 @@ chrome.runtime.onMessage.addListener((message) => {
         cacheTime = message["NewCacheTime"];
     }
 })
-
-function sleep(time: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, time));
-}
 
 function isValidCurrency(currency: any): boolean {
     return validCurrenciesList.includes(currency);
@@ -110,7 +105,7 @@ function initHistory(): void {
         if (isValidCurrency(from) && isValidCurrency(to)) {
             getHistory(from, to);
         } else {
-            showHistoryError(phrases.unsupportedCurrency);
+            showStatus($("#history-error"), phrases.unsupportedCurrency);
         }
     })
 }
@@ -246,13 +241,13 @@ function getRate(from: any, to: any, value: any, ID: number) {
                 cacheRate(from, to, value, ID);
             }
         } else if (APIKey === undefined && cacheTime === undefined) {
-            showConversionError(phrases.notConfigured);
+            showStatus($("#conversion-error"), phrases.notConfigured);
             status.text("");
         } else if (APIKey === undefined) {
-            showConversionError(phrases.APIKeyNotSet);
+            showStatus($("#conversion-error"), phrases.APIKeyNotSet);
             status.text("");
         } else if (cacheTime === undefined) {
-            showConversionError(phrases.cacheTimeNotSet);
+            showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
             status.text("");
         }
     })
@@ -266,14 +261,14 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
         url: getURL(from, to, 1),
         type: "GET",
         dataType: "json",
-        success: (result) => {
+        success: async (result) => {
             if (result.hasOwnProperty("Realtime Currency Exchange Rate")) {
                 const rate: string | number = result["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
 
                 let obj: { [index: string]: any } = {};
                 obj[key] = {"rate": rate, "timestamp": Date.now()};
 
-                chrome.storage.local.set(obj);
+                await chrome.storage.local.set(obj);
 
                 showConversionRate(rate, value, ID);
             } else if (result.hasOwnProperty("Error Message")) {
@@ -297,28 +292,28 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                             $("#status-" + ID).text("");
 
                             if (response["Error Message"] === phrases.responseInvalidCurrency) {
-                                showConversionError(phrases.unsupportedCurrency);
+                                showStatus($("#conversion-error"), phrases.unsupportedCurrency);
                             } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
-                                showConversionError(phrases.invalidAPIKey);
+                                showStatus($("#conversion-error"), phrases.invalidAPIKey);
                             }
                         } else if (response.hasOwnProperty("Note")) {
-                            showConversionError(phrases.rateLimited);
+                            showStatus($("#conversion-error"), phrases.rateLimited);
                         } else {
-                            showConversionError(phrases.unexpectedResponse);
+                            showStatus($("#conversion-error"), phrases.unexpectedResponse);
                         }
                     },
                     error: (response) => {
-                        showConversionError(response);
+                        showStatus($("#conversion-error"), response);
                     }
                 })
             } else if (result.hasOwnProperty("Note")) {
-                showConversionError(phrases.rateLimited);
+                showStatus($("#conversion-error"), phrases.rateLimited);
             } else {
-                showConversionError(phrases.unexpectedResponse);
+                showStatus($("#conversion-error"), phrases.unexpectedResponse);
             }
         },
         error: (result) => {
-            showConversionError(result);
+            showStatus($("#conversion-error"), result);
         }
     })
 }
@@ -334,29 +329,12 @@ function showConversionRate(rate: any, value: any, ID: number): void {
     }
     // Invalid rate
     else if (isNaN(rate) || rate === undefined) {
-        showConversionError(phrases.requestNotFinished);
+        showStatus($("#conversion-error"), phrases.requestNotFinished);
         status.text("");
     }
     // Unknown error
     else {
         status.text(phrases.requestFailed);
-    }
-}
-
-function showConversionError(error: any): void {
-    let element: any = $("#conversion-error");
-
-    if (!conversionErrorShown) {
-        conversionErrorShown = true;
-
-        element.show(500);
-        element.text(error);
-        sleep(5000).then(() => {
-            element.hide(500);
-            conversionErrorShown = false;
-        });
-    } else {
-        element.text(error);
     }
 }
 
@@ -374,11 +352,11 @@ function getHistory(from: any, to: any): void {
                 cacheHistory(from, to);
             }
         } else if (APIKey === undefined && cacheTime === undefined) {
-            showHistoryError(phrases.notConfigured);
+            showStatus($("#history-error"), phrases.notConfigured);
         } else if (APIKey === undefined) {
-            showHistoryError(phrases.APIKeyNotSet);
+            showStatus($("#history-error"), phrases.APIKeyNotSet);
         } else if (cacheTime === undefined) {
-            showHistoryError(phrases.cacheTimeNotSet);
+            showStatus($("#history-error"), phrases.cacheTimeNotSet);
         }
     })
 }
@@ -391,7 +369,7 @@ function cacheHistory(from: any, to: any): void {
         url: getURL(from, to, 2),
         type: "GET",
         dataType: "json",
-        success: (result) => {
+        success: async (result) => {
             if (result.hasOwnProperty("Time Series FX (Daily)")) {
                 let history: any = result["Time Series FX (Daily)"];
                 history["timestamp"] = Date.now();
@@ -399,7 +377,7 @@ function cacheHistory(from: any, to: any): void {
                 let obj: { [index: string]: any } = {};
                 obj[key] = history;
 
-                chrome.storage.local.set(obj);
+                await chrome.storage.local.set(obj);
 
                 showHistoryRate(from, to, history);
             } else if (result.hasOwnProperty("Error Message")) {
@@ -422,49 +400,32 @@ function cacheHistory(from: any, to: any): void {
                             showHistoryRate(from, to, history);
                         } else if (response.hasOwnProperty("Error Message")) {
                             if (response["Error Message"] === phrases.responseInvalidCurrency) {
-                                showHistoryError(phrases.unsupportedCurrency);
+                                showStatus($("#history-error"), phrases.unsupportedCurrency);
                             } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
-                                showHistoryError(phrases.invalidAPIKey);
+                                showStatus($("#history-error"), phrases.invalidAPIKey);
                             }
                         } else if (response.hasOwnProperty("Note")) {
-                            showHistoryError(phrases.rateLimited);
+                            showStatus($("#history-error"), phrases.rateLimited);
                         } else {
-                            showHistoryError(phrases.unexpectedResponse);
+                            showStatus($("#history-error"), phrases.unexpectedResponse);
                         }
                     },
                     error: (response) => {
-                        showHistoryError(response);
+                        showStatus($("#history-error"), response);
                     }
                 })
             } else if (result.hasOwnProperty("Note")) {
-                showHistoryError(phrases.rateLimited);
+                showStatus($("#history-error"), phrases.rateLimited);
             } else {
-                showHistoryError(phrases.unexpectedResponse);
+                showStatus($("#history-error"), phrases.unexpectedResponse);
             }
         },
         error: (result) => {
-            showHistoryError(result);
+            showStatus($("#history-error"), result);
         }
     })
 }
 
 function showHistoryRate(from: any, to: any, history: any): void {
 //
-}
-
-function showHistoryError(error: any): void {
-    let element: any = $("#history-error");
-
-    if (!historyErrorShown) {
-        historyErrorShown = true;
-
-        element.show(500);
-        element.text(error);
-        sleep(5000).then(() => {
-            element.hide(500);
-            historyErrorShown = false;
-        });
-    } else {
-        element.text(error);
-    }
 }

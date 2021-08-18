@@ -2,7 +2,7 @@ import * as currencies from "./currencies.json";
 
 const cacheTime: number = 3600000; // Default: 1 hour
 
-chrome.storage.local.set({"cacheTime": 3600000});
+chrome.storage.local.set({"cacheTime": cacheTime});
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.hasOwnProperty("NewAPIKey")) {
