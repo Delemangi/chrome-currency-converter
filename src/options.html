@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="third-party/bootstrap.min.css">
 </head>
 <body>
-<div class="container" id="options">
+<div class="container font-monospace" id="options">
+    <h1 class="text-center mt-2">Settings</h1>
     <div class="row g-3 m-3 align-items-center">
         <div class="col-2 text-center">
             <label for="api" class="col-form-label">API Key</label>
@@ -17,7 +18,7 @@
         </div>
         <div class="col-4">
             <span id="APIHelp" class="form-text">
-                From alphavantage.com
+                Obtained from alphavantage.com
             </span>
         </div>
     </div>
@@ -34,7 +35,8 @@
             </span>
         </div>
     </div>
-    <div class="container text-center alert alert-success" id="options-success" role="alert" style="display: none;"></div>
+    <div class="container text-center alert alert-success" id="options-success" role="alert"
+         style="display: none;"></div>
     <div class="container text-center alert alert-danger" id="options-error" role="alert" style="display: none;"></div>
 </div>
 <script src="third-party/jquery.min.js"></script>
