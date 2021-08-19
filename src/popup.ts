@@ -1,5 +1,6 @@
 import {showStatus} from "./functions";
 import * as phrases from "./phrases";
+import Chart from 'chart.js/auto';
 import * as Awesomplete from "awesomplete";
 
 const maxCurrencies: number = 5;
@@ -8,6 +9,7 @@ let currentCurrencies: number = 0;
 let currentID: number = 1;
 let currenciesList: string[] = [];
 let validCurrenciesList: string[] = [];
+let chart: Chart;
 
 let APIKey: string;
 let cacheTime: number;
@@ -99,10 +101,16 @@ function initHistory(): void {
         const from: any = $("#currency-1").val();
         const to: any = $("#currency-2").val();
 
-        if (isValidCurrency(from) && isValidCurrency(to)) {
-            getHistory(from, to);
-        } else {
-            showStatus($("#history-error"), phrases.unsupportedCurrency);
+        if (to === from) {
+            return;
+        }
+
+        if (to && from) {
+            if (isValidCurrency(from) && isValidCurrency(to)) {
+                getHistory(from, to);
+            } else {
+                showStatus($("#history-error"), phrases.unsupportedCurrency);
+            }
         }
     })
 }
@@ -339,9 +347,9 @@ function getHistory(from: any, to: any): void {
     chrome.storage.local.get([key, oppositeKey], (result) => {
         if (APIKey !== undefined && cacheTime !== undefined) {
             if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
-                showHistoryRate(from, to, result[key]);
+                processHistoryData(from, to, result[key]);
             } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
-                showHistoryRate(from, to, result[oppositeKey]);
+                processHistoryData(from, to, result[oppositeKey]);
             } else {
                 cacheHistory(from, to);
             }
@@ -373,10 +381,8 @@ function cacheHistory(from: any, to: any): void {
 
                 chrome.storage.local.set(obj);
 
-                showHistoryRate(from, to, history);
+                processHistoryData(from, to, history);
             } else if (result.hasOwnProperty("Error Message")) {
-                [from, to] = [to, from];
-
                 $.ajax({
                     url: getURL(from, to, 2),
                     type: "GET",
@@ -391,7 +397,7 @@ function cacheHistory(from: any, to: any): void {
 
                             chrome.storage.local.set(obj);
 
-                            showHistoryRate(from, to, history);
+                            processHistoryData(to, from, history);
                         } else if (response.hasOwnProperty("Error Message")) {
                             if (response["Error Message"] === phrases.responseInvalidCurrency) {
                                 showStatus($("#history-error"), phrases.unsupportedCurrency);
@@ -420,6 +426,38 @@ function cacheHistory(from: any, to: any): void {
     })
 }
 
-function showHistoryRate(from: any, to: any, history: any): void {
-//
+function processHistoryData(from: any, to: any, history: any): void {
+    let days: string[] = [];
+    let points: number[] = [];
+
+    for (let i = 0; i < 14; i++) {
+        let obj: [string, any] = Object.entries(history)[i];
+        days.push(obj[0]);
+        points.push(obj[1]["1. open"]);
+    }
+
+    showHistoryRate(from, to, days, points);
+}
+
+function showHistoryRate(from: any, to: any, days: string[], points: number[]): void {
+    $("#canvas").append("<canvas id=\"chart\"></canvas>");
+
+    let element: any = document.getElementById("chart");
+    let data = {
+        labels: days,
+        datasets: [
+            {
+                label: from + " vs " + to,
+                backgroundColor: "#47a185",
+                borderColor: "#47a185",
+                data: points
+            }
+        ]
+    }
+    let config: any = {
+        type: "line",
+        data: data,
+        options: {}
+    };
+    chart = new Chart(element, config);
 }
