@@ -32,7 +32,4 @@ jQuery(() => {
             showStatus($("#options-error"), phrases.emptyField);
         }
     })
-
-    $("#options-success").hide();
-    $("#options-error").hide();
 })

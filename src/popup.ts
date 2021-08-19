@@ -6,8 +6,8 @@ const maxCurrencies: number = 5;
 const initialCurrencies: number = 2;
 let currentCurrencies: number = 0;
 let currentID: number = 1;
-let currenciesList: string[];
-let validCurrenciesList: string[];
+let currenciesList: string[] = [];
+let validCurrenciesList: string[] = [];
 
 let APIKey: string;
 let cacheTime: number;
@@ -40,11 +40,11 @@ function isValidCurrency(currency: any): boolean {
 }
 
 function getID(element: any): number {
-    // JQuery HTMLElement
+    // Event
     if (element.hasOwnProperty("target")) {
         return element.target.id.toString().split("-")[1];
     }
-    // JS HTMLElement
+    // HTMLElement
     else {
         return element.id.toString().split("-")[1];
     }
@@ -65,7 +65,7 @@ function getURL(from: string, to: string, mode: number): string {
             return "";
         }
     }
-    // API key not set
+    // No API key
     else {
         return "";
     }
@@ -74,9 +74,6 @@ function getURL(from: string, to: string, mode: number): string {
 jQuery(() => {
     initConversion();
     initHistory();
-
-    $("#conversion-error").hide();
-    $("#history-error").hide();
 })
 
 function initConversion(): void {
@@ -146,15 +143,15 @@ function initDropdown(): void {
         const ID: number = getID(element);
         const to: any = $("#dropdown-" + ID).val();
         const dropdowns: any = $(".dropdowns");
-        const status = $("#status-" + ID);
+        const status: JQuery<HTMLElement> = $("#status-" + ID);
 
         if (isValidCurrency(to)) {
             status.text("");
 
-            for (let i of dropdowns) {
-                if (isValidCurrency($(i).val())) {
-                    let from: any = $(i).val();
-                    let value: any = $("#input-" + getID(i)).val();
+            for (let e of dropdowns) {
+                if (isValidCurrency($(e).val())) {
+                    let from: any = $(e).val();
+                    let value: any = $("#input-" + getID(e)).val();
 
                     if (from === to)
                         continue;
@@ -178,22 +175,22 @@ function initInput(): void {
     input.val("0.00");
 
     input.on("change", (element: any) => {
-        const ID = getID(element);
-        const value = $("#input-" + ID).val();
-        const elements = $(".dropdowns");
-        const dropdown = $("#dropdown-" + ID);
-        const from = dropdown.val();
+        const ID: number = getID(element);
+        const value: any = $("#input-" + ID).val();
+        const elements: any = $(".dropdowns");
+        const dropdown: any = $("#dropdown-" + ID);
+        const from: any = dropdown.val();
 
         if (isValidCurrency(dropdown.val())) {
-            for (let i of elements) {
-                if (getID(i) !== ID && isValidCurrency($(i).val())) {
-                    let to = $(i).val();
+            for (let e of elements) {
+                if (getID(e) !== ID && isValidCurrency($(e).val())) {
+                    let to: any = $(e).val();
 
                     if (from === to)
                         continue;
 
-                    $("#status-" + getID(i)).text(phrases.converting);
-                    getRate(from, to, value, getID(i));
+                    $("#status-" + getID(e)).text(phrases.converting);
+                    getRate(from, to, value, getID(e));
                 }
             }
         }
@@ -229,7 +226,7 @@ function initStatus(): void {
 function getRate(from: any, to: any, value: any, ID: number) {
     const key: string = from + "-" + to;
     const oppositeKey: string = to + "-" + from;
-    const status = $("#status-" + ID);
+    const status: JQuery<HTMLElement> = $("#status-" + ID);
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
         if (APIKey !== undefined && cacheTime !== undefined) {
@@ -242,12 +239,13 @@ function getRate(from: any, to: any, value: any, ID: number) {
             }
         } else if (APIKey === undefined && cacheTime === undefined) {
             showStatus($("#conversion-error"), phrases.notConfigured);
-            status.text("");
         } else if (APIKey === undefined) {
             showStatus($("#conversion-error"), phrases.APIKeyNotSet);
-            status.text("");
         } else if (cacheTime === undefined) {
             showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
+        }
+
+        if (APIKey === undefined || cacheTime === undefined) {
             status.text("");
         }
     })
@@ -261,14 +259,14 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
         url: getURL(from, to, 1),
         type: "GET",
         dataType: "json",
-        success: async (result) => {
+        success: (result) => {
             if (result.hasOwnProperty("Realtime Currency Exchange Rate")) {
                 const rate: string | number = result["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
 
                 let obj: { [index: string]: any } = {};
                 obj[key] = {"rate": rate, "timestamp": Date.now()};
 
-                await chrome.storage.local.set(obj);
+                chrome.storage.local.set(obj);
 
                 showConversionRate(rate, value, ID);
             } else if (result.hasOwnProperty("Error Message")) {
@@ -299,7 +297,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                         } else if (response.hasOwnProperty("Note")) {
                             showStatus($("#conversion-error"), phrases.rateLimited);
                         } else {
-                            showStatus($("#conversion-error"), phrases.unexpectedResponse);
+                            showStatus($("#conversion-error"), phrases.unknownError);
                         }
                     },
                     error: (response) => {
@@ -309,7 +307,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
             } else if (result.hasOwnProperty("Note")) {
                 showStatus($("#conversion-error"), phrases.rateLimited);
             } else {
-                showStatus($("#conversion-error"), phrases.unexpectedResponse);
+                showStatus($("#conversion-error"), phrases.unknownError);
             }
         },
         error: (result) => {
@@ -319,22 +317,18 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
 }
 
 function showConversionRate(rate: any, value: any, ID: number): void {
-    const status = $("#status-" + ID);
-    const input = $("#input-" + ID);
+    const status: JQuery<HTMLElement> = $("#status-" + ID);
+    const input: JQuery<HTMLElement> = $("#input-" + ID);
 
-    // Valid rate
-    if (!isNaN(rate) && rate !== undefined) {
+    status.text("");
+
+    // Valid rate, value and ID
+    if (!isNaN(rate) && !isNaN(value) && !isNaN(ID)) {
         input.val((value * rate).toFixed(2));
-        status.text("");
     }
-    // Invalid rate
-    else if (isNaN(rate) || rate === undefined) {
-        showStatus($("#conversion-error"), phrases.requestNotFinished);
-        status.text("");
-    }
-    // Unknown error
+    // Invalid rate, value or ID
     else {
-        status.text(phrases.requestFailed);
+        showStatus($("#conversion-error"), phrases.unableToConvert);
     }
 }
 
@@ -369,15 +363,15 @@ function cacheHistory(from: any, to: any): void {
         url: getURL(from, to, 2),
         type: "GET",
         dataType: "json",
-        success: async (result) => {
+        success: (result) => {
             if (result.hasOwnProperty("Time Series FX (Daily)")) {
-                let history: any = result["Time Series FX (Daily)"];
+                let history: { [index: string]: any } = result["Time Series FX (Daily)"];
                 history["timestamp"] = Date.now();
 
                 let obj: { [index: string]: any } = {};
                 obj[key] = history;
 
-                await chrome.storage.local.set(obj);
+                chrome.storage.local.set(obj);
 
                 showHistoryRate(from, to, history);
             } else if (result.hasOwnProperty("Error Message")) {
@@ -389,7 +383,7 @@ function cacheHistory(from: any, to: any): void {
                     dataType: "json",
                     success: (response) => {
                         if (result.hasOwnProperty("Time Series FX (Daily)")) {
-                            let history: any = result["Time Series FX (Daily)"];
+                            let history: { [index: string]: any } = result["Time Series FX (Daily)"];
                             history["timestamp"] = Date.now();
 
                             let obj: { [index: string]: any } = {};
@@ -407,7 +401,7 @@ function cacheHistory(from: any, to: any): void {
                         } else if (response.hasOwnProperty("Note")) {
                             showStatus($("#history-error"), phrases.rateLimited);
                         } else {
-                            showStatus($("#history-error"), phrases.unexpectedResponse);
+                            showStatus($("#history-error"), phrases.unknownError);
                         }
                     },
                     error: (response) => {
@@ -417,7 +411,7 @@ function cacheHistory(from: any, to: any): void {
             } else if (result.hasOwnProperty("Note")) {
                 showStatus($("#history-error"), phrases.rateLimited);
             } else {
-                showStatus($("#history-error"), phrases.unexpectedResponse);
+                showStatus($("#history-error"), phrases.unknownError);
             }
         },
         error: (result) => {

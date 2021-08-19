@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 })
 
-chrome.runtime.onInstalled.addListener(async ({reason}) => {
+chrome.runtime.onInstalled.addListener(({reason}) => {
     if (reason == "install") {
         chrome.runtime.openOptionsPage();
     }
