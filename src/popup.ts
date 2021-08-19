@@ -443,7 +443,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(obj[1]["1. open"]);
         }
 
-        showHistoryRate(from, to, days, points);
+        showHistoryRate(from, to, days, points, 1);
     }
     // Reverse
     else if (mode === 2) {
@@ -453,16 +453,24 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(1 / obj[1]["1. open"]);
         }
 
-        showHistoryRate(to, from, days, points);
+        showHistoryRate(to, from, days, points, 2);
     }
 }
 
-function showHistoryRate(from: any, to: any, days: string[], points: number[]): void {
+function showHistoryRate(from: any, to: any, days: string[], points: number[], mode: number): void {
+    let label;
+
+    if (mode === 1) {
+        label = from + " vs " + to;
+    } else if (mode === 2) {
+        label = to + " vs " + from;
+    }
+
     let data = {
         labels: days,
         datasets: [
             {
-                label: from + " vs " + to,
+                label: label,
                 backgroundColor: "#0d6efd",
                 borderColor: "#0d6efd",
                 data: points
@@ -487,14 +495,15 @@ function showHistoryRate(from: any, to: any, days: string[], points: number[]): 
         data["labels"] = days;
         data["datasets"] = [
             {
-                label: from + " vs " + to,
+                label: label,
                 backgroundColor: "#0d6efd",
                 borderColor: "#0d6efd",
                 data: points
             }
         ]
-        chart.update();
-
+        chart.destroy();
+        let element: any = document.getElementById("chart");
+        chart = new Chart(element, config);
         console.log(to, from);
         console.log(data);
     }
