@@ -449,7 +449,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
-            points.push(obj[1]["1. open"]);
+            points.push(obj[1]["4. close"]);
         }
 
         showHistoryRate(from, to, days, points);
@@ -459,7 +459,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
-            points.push(1 / obj[1]["1. open"]);
+            points.push(1 / obj[1]["4. close"]);
         }
 
         showHistoryRate(to, from, days, points);
@@ -469,7 +469,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
-            points.push(obj[1]["1a. open (" + to + ")"]);
+            points.push(obj[1]["4a. close (" + to + ")"]);
         }
 
         showHistoryRate(from, to, days, points);
@@ -479,7 +479,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
-            points.push(1 / obj[1]["1a. open (" + to + ")"]);
+            points.push(1 / obj[1]["4a. close (" + to + ")"]);
         }
 
         showHistoryRate(to, from, days, points);
