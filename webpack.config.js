@@ -42,6 +42,10 @@ module.exports = {
                     to: "."
                 },
                 {
+                    from: "src/popup.css",
+                    to: "."
+                },
+                {
                     from: "src/popup.html",
                     to: "."
                 },

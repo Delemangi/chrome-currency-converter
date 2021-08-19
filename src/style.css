@@ -1,8 +1,3 @@
-body {
-    width: 700px;
-    height: 475px;
-}
-
 button.buttons {
     height: 30px;
 }
@@ -20,8 +15,4 @@ div#currency-statuses p {
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
-}
-
-input[type=number] {
-    -moz-appearance: textfield;
 }

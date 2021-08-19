@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
     <link rel="stylesheet" href="third-party/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container font-monospace" id="options">
@@ -18,7 +19,8 @@
         </div>
         <div class="col-4">
             <span id="APIHelp" class="form-text">
-                Obtained from alphavantage.com
+                Your API key. Can be obtained from <a href="https://www.alphavantage.co/support/#api-key"
+                                                      target="_blank">here</a>.
             </span>
         </div>
     </div>
@@ -31,7 +33,20 @@
         </div>
         <div class="col-4">
             <span id="CacheHelp" class="form-text">
-                In seconds
+                How long to cache currency exchange rates, in ms.
+            </span>
+        </div>
+    </div>
+    <div class="row g-3 m-3 align-items-center">
+        <div class="col-2 text-center">
+            <label for="cache" class="col-form-label">History Days</label>
+        </div>
+        <div class="col-3">
+            <input type="number" id="history" class="form-control" aria-describedby="historyHelp">
+        </div>
+        <div class="col-4">
+            <span id="historyHelp" class="form-text">
+                How many days to display on currency history charts.
             </span>
         </div>
     </div>

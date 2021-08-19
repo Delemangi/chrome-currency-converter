@@ -13,8 +13,9 @@ let chart: Chart;
 
 let APIKey: string;
 let cacheTime: number;
+let historyDays: number;
 
-chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime"], (result) => {
+chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime", "historyDays"], (result) => {
     currenciesList = result.currencies;
     validCurrenciesList = result.validCurrencies;
 
@@ -24,6 +25,10 @@ chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime"
 
     if (result.cacheTime !== undefined) {
         cacheTime = result.cacheTime;
+    }
+
+    if (result.historyDays !== undefined) {
+        historyDays = result.historyDays;
     }
 })
 
@@ -347,9 +352,9 @@ function getHistory(from: any, to: any): void {
     chrome.storage.local.get([key, oppositeKey], (result) => {
         if (APIKey !== undefined && cacheTime !== undefined) {
             if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
-                processHistoryData(from, to, result[key]);
+                processHistoryData(from, to, result[key], 1);
             } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
-                processHistoryData(from, to, result[oppositeKey]);
+                processHistoryData(from, to, result[oppositeKey], 2);
             } else {
                 cacheHistory(from, to);
             }
@@ -381,7 +386,7 @@ function cacheHistory(from: any, to: any): void {
 
                 chrome.storage.local.set(obj);
 
-                processHistoryData(from, to, history);
+                processHistoryData(from, to, history, 1);
             } else if (result.hasOwnProperty("Error Message")) {
                 $.ajax({
                     url: getURL(from, to, 2),
@@ -397,7 +402,7 @@ function cacheHistory(from: any, to: any): void {
 
                             chrome.storage.local.set(obj);
 
-                            processHistoryData(to, from, history);
+                            processHistoryData(from, to, history, 2);
                         } else if (response.hasOwnProperty("Error Message")) {
                             if (response["Error Message"] === phrases.responseInvalidCurrency) {
                                 showStatus($("#history-error"), phrases.unsupportedCurrency);
@@ -426,30 +431,40 @@ function cacheHistory(from: any, to: any): void {
     })
 }
 
-function processHistoryData(from: any, to: any, history: any): void {
+function processHistoryData(from: any, to: any, history: any, mode: number): void {
     let days: string[] = [];
     let points: number[] = [];
 
-    for (let i = 0; i < 14; i++) {
-        let obj: [string, any] = Object.entries(history)[i];
-        days.push(obj[0]);
-        points.push(obj[1]["1. open"]);
-    }
+    // Normal
+    if (mode === 1) {
+        for (let i = 0; i < historyDays; i++) {
+            let obj: [string, any] = Object.entries(history)[i];
+            days.push(obj[0]);
+            points.push(obj[1]["1. open"]);
+        }
 
-    showHistoryRate(from, to, days, points);
+        showHistoryRate(from, to, days, points);
+    }
+    // Reverse
+    else if (mode === 2) {
+        for (let i = 0; i < historyDays; i++) {
+            let obj: [string, any] = Object.entries(history)[i];
+            days.push(obj[0]);
+            points.push(1 / obj[1]["1. open"]);
+        }
+
+        showHistoryRate(to, from, days, points);
+    }
 }
 
 function showHistoryRate(from: any, to: any, days: string[], points: number[]): void {
-    $("#canvas").append("<canvas id=\"chart\"></canvas>");
-
-    let element: any = document.getElementById("chart");
     let data = {
         labels: days,
         datasets: [
             {
                 label: from + " vs " + to,
-                backgroundColor: "#47a185",
-                borderColor: "#47a185",
+                backgroundColor: "#0d6efd",
+                borderColor: "#0d6efd",
                 data: points
             }
         ]
@@ -459,5 +474,28 @@ function showHistoryRate(from: any, to: any, days: string[], points: number[]): 
         data: data,
         options: {}
     };
-    chart = new Chart(element, config);
+
+    if ($("canvas").length === 0) {
+        $("#canvas").append("<canvas id=\"chart\"></canvas>");
+        let element: any = document.getElementById("chart");
+
+        chart = new Chart(element, config);
+
+        console.log(to, from);
+        console.log(data);
+    } else {
+        data["labels"] = days;
+        data["datasets"] = [
+            {
+                label: from + " vs " + to,
+                backgroundColor: "#0d6efd",
+                borderColor: "#0d6efd",
+                data: points
+            }
+        ]
+        chart.update();
+
+        console.log(to, from);
+        console.log(data);
+    }
 }
