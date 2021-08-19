@@ -67,6 +67,10 @@ function getURL(from: string, to: string, mode: number): string {
         else if (mode === 2) {
             return "https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=" + from + "&to_symbol=" + to + "&apikey=" + APIKey;
         }
+        // Cryptocurrency history
+        else if (mode === 3) {
+            return "https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=" + from + "&market=" + to + "&apikey=" + APIKey;
+        }
         // None of the above
         else {
             return "";
@@ -114,7 +118,7 @@ function initHistory(): void {
             if (isValidCurrency(from) && isValidCurrency(to)) {
                 getHistory(from, to);
             } else {
-                showStatus($("#history-error"), phrases.unsupportedCurrency);
+                showStatus($("#history-error"), phrases.invalidCurrency);
             }
         }
     })
@@ -256,6 +260,8 @@ function getRate(from: any, to: any, value: any, ID: number) {
             showStatus($("#conversion-error"), phrases.APIKeyNotSet);
         } else if (cacheTime === undefined) {
             showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
+        } else {
+            showStatus($("#conversion-error"), phrases.unknownError);
         }
 
         if (APIKey === undefined || cacheTime === undefined) {
@@ -302,7 +308,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                         } else if (response.hasOwnProperty("Error Message")) {
                             $("#status-" + ID).text("");
 
-                            if (response["Error Message"] === phrases.responseInvalidCurrency) {
+                            if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
                                 showStatus($("#conversion-error"), phrases.unsupportedCurrency);
                             } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
                                 showStatus($("#conversion-error"), phrases.invalidAPIKey);
@@ -341,7 +347,7 @@ function showConversionRate(rate: any, value: any, ID: number): void {
     }
     // Invalid rate, value or ID
     else {
-        showStatus($("#conversion-error"), phrases.unableToConvert);
+        showStatus($("#conversion-error"), phrases.unknownError);
     }
 }
 
@@ -358,19 +364,22 @@ function getHistory(from: any, to: any): void {
             } else {
                 cacheHistory(from, to);
             }
-        } else if (APIKey === undefined && cacheTime === undefined) {
+        } else if (APIKey === undefined && cacheTime === undefined && historyDays === undefined) {
             showStatus($("#history-error"), phrases.notConfigured);
         } else if (APIKey === undefined) {
             showStatus($("#history-error"), phrases.APIKeyNotSet);
         } else if (cacheTime === undefined) {
             showStatus($("#history-error"), phrases.cacheTimeNotSet);
+        } else if (historyDays === undefined) {
+            showStatus($("#history-error"), phrases.historyDaysNotSet);
+        } else {
+            showStatus($("#history-error"), phrases.unknownError);
         }
     })
 }
 
 function cacheHistory(from: any, to: any): void {
     const key: string = from + "~" + to;
-    const oppositeKey: string = to + "~" + from;
 
     $.ajax({
         url: getURL(from, to, 2),
@@ -389,22 +398,22 @@ function cacheHistory(from: any, to: any): void {
                 processHistoryData(from, to, history, 1);
             } else if (result.hasOwnProperty("Error Message")) {
                 $.ajax({
-                    url: getURL(from, to, 2),
+                    url: getURL(from, to, 3),
                     type: "GET",
                     dataType: "json",
                     success: (response) => {
-                        if (result.hasOwnProperty("Time Series FX (Daily)")) {
-                            let history: { [index: string]: any } = result["Time Series FX (Daily)"];
+                        if (response.hasOwnProperty("Time Series (Digital Currency Daily)")) {
+                            let history: { [index: string]: any } = response["Time Series (Digital Currency Daily)"];
                             history["timestamp"] = Date.now();
 
                             let obj: { [index: string]: any } = {};
-                            obj[oppositeKey] = history;
+                            obj[key] = history;
 
                             chrome.storage.local.set(obj);
 
-                            processHistoryData(from, to, history, 2);
+                            processHistoryData(from, to, history, 3);
                         } else if (response.hasOwnProperty("Error Message")) {
-                            if (response["Error Message"] === phrases.responseInvalidCurrency) {
+                            if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
                                 showStatus($("#history-error"), phrases.unsupportedCurrency);
                             } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
                                 showStatus($("#history-error"), phrases.invalidAPIKey);
@@ -435,7 +444,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
     let days: string[] = [];
     let points: number[] = [];
 
-    // Normal
+    // Currency
     if (mode === 1) {
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
@@ -443,9 +452,9 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(obj[1]["1. open"]);
         }
 
-        showHistoryRate(from, to, days, points, 1);
+        showHistoryRate(from, to, days, points);
     }
-    // Reverse
+    // Reverse currency
     else if (mode === 2) {
         for (let i = 0; i < historyDays; i++) {
             let obj: [string, any] = Object.entries(history)[i];
@@ -453,24 +462,36 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(1 / obj[1]["1. open"]);
         }
 
-        showHistoryRate(to, from, days, points, 2);
+        showHistoryRate(to, from, days, points);
+    }
+    // Cryptocurrency
+    else if (mode === 3) {
+        for (let i = 0; i < historyDays; i++) {
+            let obj: [string, any] = Object.entries(history)[i];
+            days.push(obj[0]);
+            points.push(obj[1]["1a. open (" + to + ")"]);
+        }
+
+        showHistoryRate(from, to, days, points);
+    }
+    // Reverse cryptocurrency
+    else if (mode === 4) {
+        for (let i = 0; i < historyDays; i++) {
+            let obj: [string, any] = Object.entries(history)[i];
+            days.push(obj[0]);
+            points.push(1 / obj[1]["1a. open (" + to + ")"]);
+        }
+
+        showHistoryRate(to, from, days, points);
     }
 }
 
-function showHistoryRate(from: any, to: any, days: string[], points: number[], mode: number): void {
-    let label;
-
-    if (mode === 1) {
-        label = from + " vs " + to;
-    } else if (mode === 2) {
-        label = to + " vs " + from;
-    }
-
+function showHistoryRate(from: any, to: any, days: string[], points: number[]): void {
     let data = {
         labels: days,
         datasets: [
             {
-                label: label,
+                label: from + " vs " + to,
                 backgroundColor: "#0d6efd",
                 borderColor: "#0d6efd",
                 data: points
@@ -485,26 +506,10 @@ function showHistoryRate(from: any, to: any, days: string[], points: number[], m
 
     if ($("canvas").length === 0) {
         $("#canvas").append("<canvas id=\"chart\"></canvas>");
-        let element: any = document.getElementById("chart");
-
-        chart = new Chart(element, config);
-
-        console.log(to, from);
-        console.log(data);
     } else {
-        data["labels"] = days;
-        data["datasets"] = [
-            {
-                label: label,
-                backgroundColor: "#0d6efd",
-                borderColor: "#0d6efd",
-                data: points
-            }
-        ]
         chart.destroy();
-        let element: any = document.getElementById("chart");
-        chart = new Chart(element, config);
-        console.log(to, from);
-        console.log(data);
     }
+
+    let element: any = document.getElementById("chart");
+    chart = new Chart(element, config);
 }
