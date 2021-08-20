@@ -51,7 +51,14 @@ function isValidCurrency(currency: any): boolean {
 }
 
 function isOutdated(timestamp: number): boolean {
-    return timestamp + cacheTime <= Date.now();
+    // Caching time defined
+    if (cacheTime === undefined) {
+        return timestamp + 3600000 <= Date.now();
+    }
+    // Caching time not defined
+    else {
+        return timestamp + cacheTime <= Date.now();
+    }
 }
 
 function getID(element: any): number {
@@ -245,28 +252,19 @@ function initStatus(): void {
 function getRate(from: any, to: any, value: any, ID: number) {
     const key: string = from + "-" + to;
     const oppositeKey: string = to + "-" + from;
-    const status: JQuery<HTMLElement> = $("#status-" + ID);
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
-        // Caching time set
-        if (cacheTime !== undefined) {
-            // Normal rate cached
-            if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
-                showConversionRate(result[key]["rate"], value, ID);
-            }
-            // Opposite rate cached
-            else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
-                showConversionRate(1 / result[oppositeKey]["rate"], value, ID);
-            }
-            // Nothing cached
-            else {
-                cacheRateNormal(from, to, value, ID);
-            }
+        // Normal rate cached
+        if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
+            showConversionRate(result[key]["rate"], value, ID);
         }
-        // Caching time not set
+        // Opposite rate cached
+        else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
+            showConversionRate(1 / result[oppositeKey]["rate"], value, ID);
+        }
+        // Nothing cached
         else {
-            showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
-            status.text("");
+            cacheRateNormal(from, to, value, ID);
         }
     })
 }
@@ -382,24 +380,17 @@ function getHistory(from: any, to: any): void {
     const oppositeKey: string = to + "~" + from;
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
-        // Caching time set
-        if (cacheTime !== undefined) {
-            // Normal rate cached
-            if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
-                processHistoryData(from, to, result[key], 1);
-            }
-            // Opposite rate cached
-            else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
-                processHistoryData(from, to, result[oppositeKey], 2);
-            }
-            // Not cached
-            else {
-                cacheHistory(from, to);
-            }
+        // Normal rate cached
+        if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
+            processHistoryData(from, to, result[key], 1);
         }
-        // Caching time not set
+        // Opposite rate cached
+        else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
+            processHistoryData(from, to, result[oppositeKey], 2);
+        }
+        // Not cached
         else {
-            showStatus($("#history-error"), phrases.cacheTimeNotSet);
+            cacheHistory(from, to);
         }
     })
 }
@@ -486,10 +477,15 @@ function cacheHistory(from: any, to: any): void {
 function processHistoryData(from: any, to: any, history: any, mode: number): void {
     let days: string[] = [];
     let points: number[] = [];
+    let hd: number = historyDays;
+
+    if (hd === undefined) {
+        hd = 14;
+    }
 
     // Currency
     if (mode === 1) {
-        for (let i = 0; i < historyDays; i++) {
+        for (let i = 0; i < hd; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
             points.push(obj[1]["4. close"]);
@@ -499,7 +495,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
     }
     // Reverse currency
     else if (mode === 2) {
-        for (let i = 0; i < historyDays; i++) {
+        for (let i = 0; i < hd; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
             points.push(1 / obj[1]["4. close"]);
@@ -510,7 +506,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
     }
     // Cryptocurrency
     else if (mode === 3) {
-        for (let i = 0; i < historyDays; i++) {
+        for (let i = 0; i < hd; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
             points.push(obj[1]["4a. close (" + to + ")"]);
@@ -520,7 +516,7 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
     }
     // Reverse cryptocurrency
     else if (mode === 4) {
-        for (let i = 0; i < historyDays; i++) {
+        for (let i = 0; i < hd; i++) {
             let obj: [string, any] = Object.entries(history)[i];
             days.push(obj[0]);
             points.push(1 / obj[1]["4a. close (" + to + ")"]);
