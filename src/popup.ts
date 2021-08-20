@@ -453,7 +453,8 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(1 / obj[1]["4. close"]);
         }
 
-        showHistoryRate(to, from, days, points);
+        [from, to] = [to, from];
+        showHistoryRate(from, to, days, points);
     }
     // Cryptocurrency
     else if (mode === 3) {
@@ -473,7 +474,8 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
             points.push(1 / obj[1]["4a. close (" + to + ")"]);
         }
 
-        showHistoryRate(to, from, days, points);
+        [from, to] = [to, from];
+        showHistoryRate(from, to, days, points);
     }
 }
 
