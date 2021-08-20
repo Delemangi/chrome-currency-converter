@@ -50,6 +50,10 @@ function isValidCurrency(currency: any): boolean {
     return validCurrenciesList.includes(currency);
 }
 
+function isOutdated(timestamp: number): boolean {
+    return timestamp + cacheTime <= Date.now();
+}
+
 function getID(element: any): number {
     // Event
     if (element.hasOwnProperty("target")) {
@@ -245,10 +249,10 @@ function getRate(from: any, to: any, value: any, ID: number) {
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
         if (cacheTime !== undefined) {
-            if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
+            if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
                 showConversionRate(result[key]["rate"], value, ID);
-            } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
-                showConversionRate(1 / +result[oppositeKey]["rate"], value, ID);
+            } else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
+                showConversionRate(1 / result[oppositeKey]["rate"], value, ID);
             } else {
                 cacheRate(from, to, value, ID);
             }
@@ -350,9 +354,9 @@ function getHistory(from: any, to: any): void {
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
         if (cacheTime !== undefined) {
-            if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
+            if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
                 processHistoryData(from, to, result[key], 1);
-            } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
+            } else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
                 processHistoryData(from, to, result[oppositeKey], 2);
             } else {
                 cacheHistory(from, to);
