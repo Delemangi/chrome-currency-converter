@@ -390,12 +390,12 @@ function getHistory(from: any, to: any): void {
         }
         // Not cached
         else {
-            cacheHistory(from, to);
+            cacheHistoryNormal(from, to);
         }
     })
 }
 
-function cacheHistory(from: any, to: any): void {
+function cacheHistoryNormal(from: any, to: any): void {
     const key: string = from + "~" + to;
 
     $.ajax({
@@ -417,47 +417,7 @@ function cacheHistory(from: any, to: any): void {
             }
             // Invalid request
             else if (result.hasOwnProperty("Error Message")) {
-                $.ajax({
-                    url: getURL(from, to, 3),
-                    type: "GET",
-                    dataType: "json",
-                    success: (response) => {
-                        // Success
-                        if (response.hasOwnProperty("Time Series (Digital Currency Daily)")) {
-                            let history: { [index: string]: any } = response["Time Series (Digital Currency Daily)"];
-                            history["timestamp"] = Date.now();
-
-                            let obj: { [index: string]: any } = {};
-                            obj[key] = history;
-
-                            chrome.storage.local.set(obj);
-
-                            processHistoryData(from, to, history, 3);
-                        }
-                        // Invalid request
-                        else if (response.hasOwnProperty("Error Message")) {
-                            // Unsupported currency
-                            if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
-                                showStatus($("#history-error"), phrases.unsupportedCurrency);
-                            }
-                            // Invalid API key
-                            else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
-                                showStatus($("#history-error"), phrases.invalidAPIKey);
-                            }
-                        }
-                        // Rate limited
-                        else if (response.hasOwnProperty("Note")) {
-                            showStatus($("#history-error"), phrases.rateLimited);
-                        }
-                        // Unknown error
-                        else {
-                            showStatus($("#history-error"), phrases.unknownError);
-                        }
-                    },
-                    error: (response) => {
-                        showStatus($("#history-error"), response);
-                    }
-                })
+                cacheHistoryCrypto(from, to);
             }
             // Rate limited
             else if (result.hasOwnProperty("Note")) {
@@ -470,6 +430,52 @@ function cacheHistory(from: any, to: any): void {
         },
         error: (result) => {
             showStatus($("#history-error"), result);
+        }
+    })
+}
+
+function cacheHistoryCrypto(from: any, to: any): void {
+    const key: string = from + "~" + to;
+
+    $.ajax({
+        url: getURL(from, to, 3),
+        type: "GET",
+        dataType: "json",
+        success: (response) => {
+            // Success
+            if (response.hasOwnProperty("Time Series (Digital Currency Daily)")) {
+                let history: { [index: string]: any } = response["Time Series (Digital Currency Daily)"];
+                history["timestamp"] = Date.now();
+
+                let obj: { [index: string]: any } = {};
+                obj[key] = history;
+
+                chrome.storage.local.set(obj);
+
+                processHistoryData(from, to, history, 3);
+            }
+            // Invalid request
+            else if (response.hasOwnProperty("Error Message")) {
+                // Unsupported currency
+                if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
+                    showStatus($("#history-error"), phrases.unsupportedCurrency);
+                }
+                // Invalid API key
+                else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
+                    showStatus($("#history-error"), phrases.invalidAPIKey);
+                }
+            }
+            // Rate limited
+            else if (response.hasOwnProperty("Note")) {
+                showStatus($("#history-error"), phrases.rateLimited);
+            }
+            // Unknown error
+            else {
+                showStatus($("#history-error"), phrases.unknownError);
+            }
+        },
+        error: (response) => {
+            showStatus($("#history-error"), response);
         }
     })
 }
