@@ -1,14 +1,18 @@
 {
   "name": "currency-converter-chrome",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "1.0",
+  "description": "Chrome extension for converting and viewing info about currencies",
   "scripts": {
     "build": "webpack --config webpack.config.js"
   },
-  "keywords": [],
-  "author": "Stefan Milev",
+  "respository": {
+    "type": "git",
+    "url": "https://github.com/Delemangi/chrome-currency-converter.git"
+  },
+  "author": "Delemangi",
   "license": "MIT",
+  "bugs": "https://github.com/Delemangi/chrome-currency-converter/issues",
+  "homepage": "https://github.com/Delemangi/chrome-currency-converter",
   "dependencies": {
     "@types/awesomplete": "^1.1.11",
     "@types/bootstrap": "^5.1.1",
