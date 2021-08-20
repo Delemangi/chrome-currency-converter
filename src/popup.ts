@@ -260,7 +260,7 @@ function getRate(from: any, to: any, value: any, ID: number) {
             }
             // Nothing cached
             else {
-                cacheRate(from, to, value, ID);
+                cacheRateNormal(from, to, value, ID);
             }
         }
         // Caching time not set
@@ -271,9 +271,8 @@ function getRate(from: any, to: any, value: any, ID: number) {
     })
 }
 
-function cacheRate(from: any, to: any, value: any, ID: number): void {
+function cacheRateNormal(from: any, to: any, value: any, ID: number): void {
     const key: string = from + "-" + to;
-    const oppositeKey: string = to + "-" + from;
 
     $.ajax({
         url: getURL(from, to, 1),
@@ -293,50 +292,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
             }
             // Invalid request
             else if (result.hasOwnProperty("Error Message")) {
-                [from, to] = [to, from];
-
-                $.ajax({
-                    url: getURL(from, to, 1),
-                    type: "GET",
-                    dataType: "json",
-                    success: (response) => {
-                        // Success
-                        if (response.hasOwnProperty("Realtime Currency Exchange Rate")) {
-                            const rate: string | number = response["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
-
-                            let obj: { [index: string]: any } = {};
-                            obj[oppositeKey] = {"rate": rate, "timestamp": Date.now()};
-
-                            chrome.storage.local.set(obj);
-
-                            showConversionRate(1 / +rate, value, ID);
-                        }
-                        // Invalid request
-                        else if (response.hasOwnProperty("Error Message")) {
-                            $("#status-" + ID).text("");
-
-                            // Unsupported currency
-                            if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
-                                showStatus($("#conversion-error"), phrases.unsupportedCurrency);
-                            }
-                            // Invalid API key
-                            else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
-                                showStatus($("#conversion-error"), phrases.invalidAPIKey);
-                            }
-                        }
-                        // Rate limited
-                        else if (response.hasOwnProperty("Note")) {
-                            showStatus($("#conversion-error"), phrases.rateLimited);
-                        }
-                        // Unknown error
-                        else {
-                            showStatus($("#conversion-error"), phrases.unknownError);
-                        }
-                    },
-                    error: (response) => {
-                        showStatus($("#conversion-error"), response);
-                    }
-                })
+                cacheRateOpposite(from, to, value, ID);
             }
             // Rate limited
             else if (result.hasOwnProperty("Note")) {
@@ -349,6 +305,54 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
         },
         error: (result) => {
             showStatus($("#conversion-error"), result);
+        }
+    })
+}
+
+function cacheRateOpposite(from: any, to: any, value: any, ID: number): void {
+    [from, to] = [to, from];
+    const key: string = from + "-" + to;
+
+    $.ajax({
+        url: getURL(from, to, 1),
+        type: "GET",
+        dataType: "json",
+        success: (response) => {
+            // Success
+            if (response.hasOwnProperty("Realtime Currency Exchange Rate")) {
+                const rate: string | number = response["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
+
+                let obj: { [index: string]: any } = {};
+                obj[key] = {"rate": rate, "timestamp": Date.now()};
+
+                chrome.storage.local.set(obj);
+
+                showConversionRate(1 / +rate, value, ID);
+            }
+            // Invalid request
+            else if (response.hasOwnProperty("Error Message")) {
+                $("#status-" + ID).text("");
+
+                // Unsupported currency
+                if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
+                    showStatus($("#conversion-error"), phrases.unsupportedCurrency);
+                }
+                // Invalid API key
+                else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
+                    showStatus($("#conversion-error"), phrases.invalidAPIKey);
+                }
+            }
+            // Rate limited
+            else if (response.hasOwnProperty("Note")) {
+                showStatus($("#conversion-error"), phrases.rateLimited);
+            }
+            // Unknown error
+            else {
+                showStatus($("#conversion-error"), phrases.unknownError);
+            }
+        },
+        error: (response) => {
+            showStatus($("#conversion-error"), response);
         }
     })
 }
