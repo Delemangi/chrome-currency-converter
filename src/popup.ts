@@ -34,7 +34,7 @@ chrome.storage.local.get(["currencies", "validCurrencies", "cacheTime", "history
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.hasOwnProperty("cacheTime")) {
-        cacheTime = message["NewCacheTime"];
+        cacheTime = message["cacheTime"];
     }
 
     if (message.hasOwnProperty("historyDays")) {
