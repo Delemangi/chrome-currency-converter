@@ -248,15 +248,23 @@ function getRate(from: any, to: any, value: any, ID: number) {
     const status: JQuery<HTMLElement> = $("#status-" + ID);
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
+        // Caching time set
         if (cacheTime !== undefined) {
+            // Normal rate cached
             if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
                 showConversionRate(result[key]["rate"], value, ID);
-            } else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
+            }
+            // Opposite rate cached
+            else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
                 showConversionRate(1 / result[oppositeKey]["rate"], value, ID);
-            } else {
+            }
+            // Nothing cached
+            else {
                 cacheRate(from, to, value, ID);
             }
-        } else {
+        }
+        // Caching time not set
+        else {
             showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
             status.text("");
         }
@@ -272,6 +280,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
         type: "GET",
         dataType: "json",
         success: (result) => {
+            // Success
             if (result.hasOwnProperty("Realtime Currency Exchange Rate")) {
                 const rate: string | number = result["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
 
@@ -281,7 +290,9 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                 chrome.storage.local.set(obj);
 
                 showConversionRate(rate, value, ID);
-            } else if (result.hasOwnProperty("Error Message")) {
+            }
+            // Invalid request
+            else if (result.hasOwnProperty("Error Message")) {
                 [from, to] = [to, from];
 
                 $.ajax({
@@ -289,6 +300,7 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                     type: "GET",
                     dataType: "json",
                     success: (response) => {
+                        // Success
                         if (response.hasOwnProperty("Realtime Currency Exchange Rate")) {
                             const rate: string | number = response["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
 
@@ -298,17 +310,26 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                             chrome.storage.local.set(obj);
 
                             showConversionRate(1 / +rate, value, ID);
-                        } else if (response.hasOwnProperty("Error Message")) {
+                        }
+                        // Invalid request
+                        else if (response.hasOwnProperty("Error Message")) {
                             $("#status-" + ID).text("");
 
+                            // Unsupported currency
                             if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
                                 showStatus($("#conversion-error"), phrases.unsupportedCurrency);
-                            } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
+                            }
+                            // Invalid API key
+                            else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
                                 showStatus($("#conversion-error"), phrases.invalidAPIKey);
                             }
-                        } else if (response.hasOwnProperty("Note")) {
+                        }
+                        // Rate limited
+                        else if (response.hasOwnProperty("Note")) {
                             showStatus($("#conversion-error"), phrases.rateLimited);
-                        } else {
+                        }
+                        // Unknown error
+                        else {
                             showStatus($("#conversion-error"), phrases.unknownError);
                         }
                     },
@@ -316,9 +337,13 @@ function cacheRate(from: any, to: any, value: any, ID: number): void {
                         showStatus($("#conversion-error"), response);
                     }
                 })
-            } else if (result.hasOwnProperty("Note")) {
+            }
+            // Rate limited
+            else if (result.hasOwnProperty("Note")) {
                 showStatus($("#conversion-error"), phrases.rateLimited);
-            } else {
+            }
+            // Unknown error
+            else {
                 showStatus($("#conversion-error"), phrases.unknownError);
             }
         },
@@ -334,13 +359,13 @@ function showConversionRate(rate: any, value: any, ID: number): void {
 
     status.text("");
 
-    // roundDigits not set
-    if (isNaN(roundDigits)) {
-        showStatus($("#conversion-error"), phrases.roundDigitsNotSet);
-    }
     // Valid rate, value and ID
-    else if (!isNaN(rate) && !isNaN(value) && !isNaN(ID)) {
-        input.val((value * rate).toFixed(roundDigits));
+    if (!isNaN(rate) && !isNaN(value) && !isNaN(ID)) {
+        if (isNaN(roundDigits)) {
+            input.val((value * rate).toFixed(2));
+        } else {
+            input.val((value * rate).toFixed(roundDigits));
+        }
     }
     // Invalid rate, value or ID
     else {
@@ -353,17 +378,23 @@ function getHistory(from: any, to: any): void {
     const oppositeKey: string = to + "~" + from;
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
+        // Caching time set
         if (cacheTime !== undefined) {
+            // Normal rate cached
             if (result.hasOwnProperty(key) && !isOutdated(result[key]["timestamp"])) {
                 processHistoryData(from, to, result[key], 1);
-            } else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
+            }
+            // Opposite rate cached
+            else if (result.hasOwnProperty(oppositeKey) && !isOutdated(result[oppositeKey]["timestamp"])) {
                 processHistoryData(from, to, result[oppositeKey], 2);
-            } else {
+            }
+            // Not cached
+            else {
                 cacheHistory(from, to);
             }
-        } else if (historyDays === undefined) {
-            showStatus($("#history-error"), phrases.historyDaysNotSet);
-        } else {
+        }
+        // Caching time not set
+        else {
             showStatus($("#history-error"), phrases.cacheTimeNotSet);
         }
     })
@@ -377,6 +408,7 @@ function cacheHistory(from: any, to: any): void {
         type: "GET",
         dataType: "json",
         success: (result) => {
+            // Success
             if (result.hasOwnProperty("Time Series FX (Daily)")) {
                 let history: { [index: string]: any } = result["Time Series FX (Daily)"];
                 history["timestamp"] = Date.now();
@@ -387,12 +419,15 @@ function cacheHistory(from: any, to: any): void {
                 chrome.storage.local.set(obj);
 
                 processHistoryData(from, to, history, 1);
-            } else if (result.hasOwnProperty("Error Message")) {
+            }
+            // Invalid request
+            else if (result.hasOwnProperty("Error Message")) {
                 $.ajax({
                     url: getURL(from, to, 3),
                     type: "GET",
                     dataType: "json",
                     success: (response) => {
+                        // Success
                         if (response.hasOwnProperty("Time Series (Digital Currency Daily)")) {
                             let history: { [index: string]: any } = response["Time Series (Digital Currency Daily)"];
                             history["timestamp"] = Date.now();
@@ -403,15 +438,24 @@ function cacheHistory(from: any, to: any): void {
                             chrome.storage.local.set(obj);
 
                             processHistoryData(from, to, history, 3);
-                        } else if (response.hasOwnProperty("Error Message")) {
+                        }
+                        // Invalid request
+                        else if (response.hasOwnProperty("Error Message")) {
+                            // Unsupported currency
                             if (response["Error Message"].includes(phrases.responseInvalidAPICall)) {
                                 showStatus($("#history-error"), phrases.unsupportedCurrency);
-                            } else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
+                            }
+                            // Invalid API key
+                            else if (response["Error Message"] === phrases.responseInvalidAPIKey) {
                                 showStatus($("#history-error"), phrases.invalidAPIKey);
                             }
-                        } else if (response.hasOwnProperty("Note")) {
+                        }
+                        // Rate limited
+                        else if (response.hasOwnProperty("Note")) {
                             showStatus($("#history-error"), phrases.rateLimited);
-                        } else {
+                        }
+                        // Unknown error
+                        else {
                             showStatus($("#history-error"), phrases.unknownError);
                         }
                     },
@@ -419,9 +463,13 @@ function cacheHistory(from: any, to: any): void {
                         showStatus($("#history-error"), response);
                     }
                 })
-            } else if (result.hasOwnProperty("Note")) {
+            }
+            // Rate limited
+            else if (result.hasOwnProperty("Note")) {
                 showStatus($("#history-error"), phrases.rateLimited);
-            } else {
+            }
+            // Unknown error
+            else {
                 showStatus($("#history-error"), phrases.unknownError);
             }
         },
