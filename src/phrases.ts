@@ -5,6 +5,7 @@ export const invalidAPIKey: string = "Invalid API key.";
 export const APIKeyNotSet: string = "API key is not set."
 export const cacheTimeNotSet: string = "Caching time is not set.";
 export const historyDaysNotSet: string = "History duration is not set.";
+export const roundDigitsNotSet: string = "Rounding digits is not set.";
 export const unsupportedCurrency: string = "One or more of the selected currencies are unsupported. Try flipping the currencies.";
 export const unknownError: string = "Unknown error.";
 export const converting: string = "Converting...";

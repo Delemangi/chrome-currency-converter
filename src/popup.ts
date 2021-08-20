@@ -14,8 +14,9 @@ let chart: Chart;
 let APIKey: string;
 let cacheTime: number;
 let historyDays: number;
+let roundDigits: number;
 
-chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime", "historyDays"], (result) => {
+chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime", "historyDays", "roundDigits"], (result) => {
     currenciesList = result.currencies;
     validCurrenciesList = result.validCurrencies;
 
@@ -30,15 +31,27 @@ chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime"
     if (result.historyDays !== undefined) {
         historyDays = result.historyDays;
     }
+
+    if (result.roundDigits !== undefined) {
+        roundDigits = result.roundDigits;
+    }
 })
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.hasOwnProperty("NewAPIKey")) {
+    if (message.hasOwnProperty("APIKey")) {
         APIKey = message["NewAPIKey"];
     }
 
-    if (message.hasOwnProperty("NewCacheTime")) {
+    if (message.hasOwnProperty("cacheTime")) {
         cacheTime = message["NewCacheTime"];
+    }
+
+    if (message.hasOwnProperty("historyDays")) {
+        historyDays = message["historyDays"];
+    }
+
+    if (message.hasOwnProperty("roundDigits")) {
+        roundDigits = message["roundDigits"];
     }
 })
 
@@ -341,9 +354,13 @@ function showConversionRate(rate: any, value: any, ID: number): void {
 
     status.text("");
 
+    // roundDigits not set
+    if (isNaN(roundDigits)) {
+        showStatus($("#conversion-error"), phrases.roundDigitsNotSet);
+    }
     // Valid rate, value and ID
-    if (!isNaN(rate) && !isNaN(value) && !isNaN(ID)) {
-        input.val((value * rate).toFixed(2));
+    else if (!isNaN(rate) && !isNaN(value) && !isNaN(ID)) {
+        input.val((value * rate).toFixed(roundDigits));
     }
     // Invalid rate, value or ID
     else {

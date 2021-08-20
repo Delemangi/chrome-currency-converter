@@ -5,8 +5,9 @@ jQuery(() => {
     let APIKeyElement: JQuery<HTMLElement> = $("#api");
     let cacheTimeElement: JQuery<HTMLElement> = $("#cache");
     let historyDaysElement: JQuery<HTMLElement> = $("#history");
+    let roundDigitsElement: JQuery<HTMLElement> = $("#rounding");
 
-    chrome.storage.local.get(["APIKey", "cacheTime", "historyDays"], (result) => {
+    chrome.storage.local.get(["APIKey", "cacheTime", "historyDays", "roundDigits"], (result) => {
         if (result.hasOwnProperty("APIKey")) {
             APIKeyElement.val(result["APIKey"]);
         }
@@ -17,6 +18,10 @@ jQuery(() => {
 
         if (result.hasOwnProperty("historyDays")) {
             historyDaysElement.val(result["historyDays"]);
+        }
+
+        if (result.hasOwnProperty("roundDigits")) {
+            roundDigitsElement.val(result["roundDigits"]);
         }
     })
 
@@ -41,6 +46,15 @@ jQuery(() => {
     historyDaysElement.on("change", () => {
         if (historyDaysElement.val() !== undefined && historyDaysElement.val() !== "") {
             chrome.runtime.sendMessage({"historyDays": historyDaysElement.val()});
+            showStatus($("#options-success"), phrases.saved);
+        } else {
+            showStatus($("#options-error"), phrases.emptyField);
+        }
+    })
+
+    roundDigitsElement.on("change", () => {
+        if (roundDigitsElement.val() !== undefined && roundDigitsElement.val() !== "") {
+            chrome.runtime.sendMessage({"roundDigits": roundDigitsElement.val()});
             showStatus($("#options-success"), phrases.saved);
         } else {
             showStatus($("#options-error"), phrases.emptyField);
