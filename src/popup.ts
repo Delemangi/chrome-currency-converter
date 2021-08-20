@@ -11,18 +11,13 @@ let currenciesList: string[] = [];
 let validCurrenciesList: string[] = [];
 let chart: Chart;
 
-let APIKey: string;
 let cacheTime: number;
 let historyDays: number;
 let roundDigits: number;
 
-chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime", "historyDays", "roundDigits"], (result) => {
+chrome.storage.local.get(["currencies", "validCurrencies", "cacheTime", "historyDays", "roundDigits"], (result) => {
     currenciesList = result.currencies;
     validCurrenciesList = result.validCurrencies;
-
-    if (result.APIKey !== undefined) {
-        APIKey = result.APIKey;
-    }
 
     if (result.cacheTime !== undefined) {
         cacheTime = result.cacheTime;
@@ -38,10 +33,6 @@ chrome.storage.local.get(["currencies", "validCurrencies", "APIKey", "cacheTime"
 })
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.hasOwnProperty("APIKey")) {
-        APIKey = message["NewAPIKey"];
-    }
-
     if (message.hasOwnProperty("cacheTime")) {
         cacheTime = message["NewCacheTime"];
     }
@@ -71,25 +62,19 @@ function getID(element: any): number {
 }
 
 function getURL(from: string, to: string, mode: number): string {
-    if (APIKey !== undefined) {
-        // Currency conversion
-        if (mode === 1) {
-            return "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=" + from + "&to_currency=" + to + "&apikey=" + APIKey;
-        }
-        // Currency history
-        else if (mode === 2) {
-            return "https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=" + from + "&to_symbol=" + to + "&apikey=" + APIKey;
-        }
-        // Cryptocurrency history
-        else if (mode === 3) {
-            return "https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=" + from + "&market=" + to + "&apikey=" + APIKey;
-        }
-        // None of the above
-        else {
-            return "";
-        }
+    // Currency conversion
+    if (mode === 1) {
+        return "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=" + from + "&to_currency=" + to + "&apikey=" + Date.now();
     }
-    // No API key
+    // Currency history
+    else if (mode === 2) {
+        return "https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=" + from + "&to_symbol=" + to + "&apikey=" + Date.now();
+    }
+    // Cryptocurrency history
+    else if (mode === 3) {
+        return "https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=" + from + "&market=" + to + "&apikey=" + Date.now();
+    }
+    // None of the above
     else {
         return "";
     }
@@ -259,7 +244,7 @@ function getRate(from: any, to: any, value: any, ID: number) {
     const status: JQuery<HTMLElement> = $("#status-" + ID);
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
-        if (APIKey !== undefined && cacheTime !== undefined) {
+        if (cacheTime !== undefined) {
             if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
                 showConversionRate(result[key]["rate"], value, ID);
             } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
@@ -267,17 +252,8 @@ function getRate(from: any, to: any, value: any, ID: number) {
             } else {
                 cacheRate(from, to, value, ID);
             }
-        } else if (APIKey === undefined && cacheTime === undefined) {
-            showStatus($("#conversion-error"), phrases.notConfigured);
-        } else if (APIKey === undefined) {
-            showStatus($("#conversion-error"), phrases.APIKeyNotSet);
-        } else if (cacheTime === undefined) {
-            showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
         } else {
-            showStatus($("#conversion-error"), phrases.unknownError);
-        }
-
-        if (APIKey === undefined || cacheTime === undefined) {
+            showStatus($("#conversion-error"), phrases.cacheTimeNotSet);
             status.text("");
         }
     })
@@ -373,7 +349,7 @@ function getHistory(from: any, to: any): void {
     const oppositeKey: string = to + "~" + from;
 
     chrome.storage.local.get([key, oppositeKey], (result) => {
-        if (APIKey !== undefined && cacheTime !== undefined) {
+        if (cacheTime !== undefined) {
             if (result.hasOwnProperty(key) && result[key]["timestamp"] + cacheTime > Date.now()) {
                 processHistoryData(from, to, result[key], 1);
             } else if (result.hasOwnProperty(oppositeKey) && result[oppositeKey]["timestamp"] + cacheTime > Date.now()) {
@@ -381,16 +357,10 @@ function getHistory(from: any, to: any): void {
             } else {
                 cacheHistory(from, to);
             }
-        } else if (APIKey === undefined && cacheTime === undefined && historyDays === undefined) {
-            showStatus($("#history-error"), phrases.notConfigured);
-        } else if (APIKey === undefined) {
-            showStatus($("#history-error"), phrases.APIKeyNotSet);
-        } else if (cacheTime === undefined) {
-            showStatus($("#history-error"), phrases.cacheTimeNotSet);
         } else if (historyDays === undefined) {
             showStatus($("#history-error"), phrases.historyDaysNotSet);
         } else {
-            showStatus($("#history-error"), phrases.unknownError);
+            showStatus($("#history-error"), phrases.cacheTimeNotSet);
         }
     })
 }

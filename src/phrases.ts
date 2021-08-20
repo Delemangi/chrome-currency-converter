@@ -2,7 +2,6 @@ export const selectCurrency: string = "Select a currency.";
 export const rateLimited: string = "Rate limited.";
 export const invalidCurrency: string = "Invalid currency.";
 export const invalidAPIKey: string = "Invalid API key.";
-export const APIKeyNotSet: string = "API key is not set."
 export const cacheTimeNotSet: string = "Caching time is not set.";
 export const historyDaysNotSet: string = "History duration is not set.";
 export const roundDigitsNotSet: string = "Rounding digits is not set.";
