@@ -25,8 +25,8 @@ chrome.runtime.onInstalled.addListener(() => {
     setCurrencies();
 })
 
-function setValidCurrencies() {
-    let validCurrencies = [];
+function setValidCurrencies(): void {
+    let validCurrencies: string[] = [];
 
     for (let curr of currencies) {
         validCurrencies.push(curr["value"]);
@@ -35,7 +35,7 @@ function setValidCurrencies() {
     chrome.storage.local.set({"validCurrencies": validCurrencies});
 }
 
-function setCurrencies() {
+function setCurrencies(): void {
     for (let curr of currencies) {
         curr["label"] += " " + curr["value"];
     }
