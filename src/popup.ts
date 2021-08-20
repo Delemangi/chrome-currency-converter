@@ -19,15 +19,15 @@ chrome.storage.local.get(["currencies", "validCurrencies", "cacheTime", "history
     currenciesList = result.currencies;
     validCurrenciesList = result.validCurrencies;
 
-    if (result.cacheTime !== undefined) {
+    if (result.hasOwnProperty("cacheTime")) {
         cacheTime = result.cacheTime;
     }
 
-    if (result.historyDays !== undefined) {
+    if (result.hasOwnProperty("historyDays")) {
         historyDays = result.historyDays;
     }
 
-    if (result.roundDigits !== undefined) {
+    if (result.hasOwnProperty("roundDigits")) {
         roundDigits = result.roundDigits;
     }
 })
