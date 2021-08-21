@@ -520,17 +520,6 @@ function processHistoryData(from: any, to: any, history: any, mode: number): voi
 
         showHistoryRate(from, to, days, points);
     }
-    // Reverse cryptocurrency
-    else if (mode === 4) {
-        for (let i = 0; i < hd; i++) {
-            let obj: [string, any] = Object.entries(history)[i];
-            days.push(obj[0]);
-            points.push(1 / obj[1]["4a. close (" + to + ")"]);
-        }
-
-        [from, to] = [to, from];
-        showHistoryRate(from, to, days, points);
-    }
 }
 
 function showHistoryRate(from: any, to: any, days: string[], points: number[]): void {
