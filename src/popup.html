@@ -17,6 +17,10 @@
     <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button"
             role="tab" aria-controls="history" aria-selected="false">History
     </button>
+    <span class="mx-auto"></span>
+    <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button"
+            role="tab" aria-controls="about" aria-selected="false">About
+    </button>
 </div>
 <div class="tab-content font-monospace" id="nav-tabContent">
     <div class="tab-pane fade show active" id="conversion" role="tabpanel" aria-labelledby="conversion-tab">
@@ -57,6 +61,28 @@
         <div id="canvas"></div>
         <div class="container text-center alert alert-danger" id="history-error" role="alert"
              style="display: none;"></div>
+    </div>
+    <div class="tab-pane fade container" id="about" role="tabpanel" aria-labelledby="about-tab">
+        <div class="container">
+            <h1 class="text-center mb-4">Currency Converter</h1>
+            <p>
+                Convert your currencies and check their historical value using this extension.
+            </p>
+            <p>
+                Conversion rates and historical values are cached.
+            </p>
+            <p>
+                It uses the <a class="text-decoration-none" href="https://www.alphavantage.co/documentation/">AlphaVantage</a>
+                API which is limited to 5 requests per minute.
+            </p>
+            <p>
+                Includes settings with configurable cache lifespan, historical data and rounding digits for conversion.
+            </p>
+            <p>
+                Made by Delemangi. The source code is available on <a class="text-decoration-none"
+                                                                      href="https://github.com/Delemangi/chrome-currency-converter">GitHub</a>.
+            </p>
+        </div>
     </div>
 </div>
 <script src="third-party/jquery.min.js"></script>
