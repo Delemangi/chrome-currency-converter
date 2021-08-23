@@ -31,18 +31,42 @@ chrome.runtime.onInstalled.addListener(() => {
 
 function setValidCurrencies(): void {
     let validCurrencies: string[] = [];
+    let validNormalCurrencies: string[] = [];
+    let validCryptoCurrencies: string[] = [];
 
-    for (let curr of currencies) {
+    for (let curr of currencies["currencies"]) {
         validCurrencies.push(curr["value"]);
+        validNormalCurrencies.push(curr["value"]);
     }
 
-    chrome.storage.local.set({"validCurrencies": validCurrencies});
+    for (let curr of currencies["cryptocurrencies"]) {
+        validCurrencies.push(curr["value"]);
+        validCryptoCurrencies.push(curr["value"]);
+    }
+
+    chrome.storage.local.set({
+        "validCurrencies": validCurrencies,
+        "validNormalCurrencies": validNormalCurrencies,
+        "validCryptoCurrencies": validCryptoCurrencies
+    });
 }
 
 function setCurrencies(): void {
-    for (let curr of currencies) {
+    for (let curr of currencies["all"]) {
         curr["label"] += " " + curr["value"];
     }
 
-    chrome.storage.local.set({"currencies": currencies});
+    for (let curr of currencies["currencies"]) {
+        curr["label"] += " " + curr["value"];
+    }
+
+    for (let curr of currencies["cryptocurrencies"]) {
+        curr["label"] += " " + curr["value"];
+    }
+
+    chrome.storage.local.set({
+        "currencies": currencies["all"],
+        "normalCurrencies": currencies["currencies"],
+        "cryptoCurrencies": currencies["cryptocurrencies"]
+    });
 }

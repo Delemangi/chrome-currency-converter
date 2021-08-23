@@ -7,18 +7,30 @@ const maxCurrencies: number = 5;
 const initialCurrencies: number = 2;
 let currentCurrencies: number = 0;
 let currentID: number = 1;
-let currenciesList: string[] = [];
-let validCurrenciesList: string[] = [];
 let chart: Chart;
+
+let validCurrenciesList: string[] = [];
+let validNormalCurrenciesList: string[] = [];
+let validCryptoCurrenciesList: string[] = [];
+let currenciesList: [] = [];
+let normalCurrenciesList: [] = [];
+let cryptoCurrenciesList: [] = [];
 
 let cacheTime: number;
 let historyDays: number;
 let roundDigits: number;
 
-chrome.storage.local.get(["currencies", "validCurrencies", "cacheTime", "historyDays", "roundDigits"], (result) => {
+chrome.storage.local.get(["currencies", "normalCurrencies", "cryptoCurrencies", "validCurrencies", "validNormalCurrencies", "validCryptoCurrencies"], (result) => {
     currenciesList = result.currencies;
-    validCurrenciesList = result.validCurrencies;
+    normalCurrenciesList = result.normalCurrencies;
+    cryptoCurrenciesList = result.cryptoCurrencies;
 
+    validCurrenciesList = result.validCurrencies;
+    validNormalCurrenciesList = result.validNormalCurrencies;
+    validCryptoCurrenciesList = result.validCryptoCurrencies;
+})
+
+chrome.storage.local.get(["cacheTime", "historyDays", "roundDigits"], (result) => {
     if (result.hasOwnProperty("cacheTime")) {
         cacheTime = result.cacheTime;
     }
@@ -46,8 +58,23 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 })
 
-function isValidCurrency(currency: any): boolean {
-    return validCurrenciesList.includes(currency);
+function isValidCurrency(currency: any, mode: number): boolean {
+    // Any currency
+    if (mode === 1) {
+        return validCurrenciesList.includes(currency);
+    }
+    // Normal currency
+    else if (mode === 2) {
+        return validNormalCurrenciesList.includes(currency);
+    }
+    // Cryptocurrency
+    else if (mode === 3) {
+        return validCryptoCurrenciesList.includes(currency);
+    }
+    // None of the above
+    else {
+        return false;
+    }
 }
 
 function isOutdated(timestamp: number): boolean {
@@ -112,8 +139,8 @@ function initHistory(): void {
     let element1: HTMLElement | null = document.getElementById("currency-1");
     let element2: HTMLElement | null = document.getElementById("currency-2");
 
-    setDropdown(element1);
-    setDropdown(element2);
+    setDropdown(element1, 1);
+    setDropdown(element2, 2);
 
     $(".currencies").on("change", () => {
         const from: any = $("#currency-1").val();
@@ -124,7 +151,7 @@ function initHistory(): void {
         }
 
         if (to && from) {
-            if (isValidCurrency(from) && isValidCurrency(to)) {
+            if (isValidCurrency(from, 1) && isValidCurrency(to, 2)) {
                 getHistory(from, to);
             } else {
                 showStatus($("#history-error"), phrases.invalidCurrency);
@@ -133,13 +160,30 @@ function initHistory(): void {
     })
 }
 
-function setDropdown(element: HTMLElement | null): void {
+function setDropdown(element: HTMLElement | null, mode: number): void {
+    let curr;
+
+    // Any
+    if (mode === 1) {
+        curr = currenciesList;
+    }
+    // Normal currencies
+    else if (mode === 2) {
+        curr = normalCurrenciesList;
+    }
+    // Cryptocurrencies
+    else if (mode === 3) {
+        curr = cryptoCurrenciesList;
+    }
+
+    let options: {} = {
+        list: curr,
+        minChars: 1,
+        maxItems: 10
+    }
+
     if (element !== null) {
-        let ap = new Awesomplete(element, {
-            list: currenciesList,
-            minChars: 1,
-            maxItems: 10
-        })
+        let ap = new Awesomplete(element, options)
         ap.open();
     }
 }
@@ -163,7 +207,7 @@ function addCurrency(): void {
 function initDropdown(): void {
     $("#currency-dropdowns").append("<input class=\"form-control m-2 dropdowns\" id=\"dropdown-" + currentID + "\">");
 
-    setDropdown(document.getElementById("dropdown-" + currentID));
+    setDropdown(document.getElementById("dropdown-" + currentID), 1);
 
     $("#dropdown-" + currentID).on("change", (element) => {
         const ID: number = getID(element);
@@ -171,11 +215,11 @@ function initDropdown(): void {
         const dropdowns: any = $(".dropdowns");
         const status: JQuery<HTMLElement> = $("#status-" + ID);
 
-        if (isValidCurrency(to)) {
+        if (isValidCurrency(to, 1)) {
             status.text("");
 
             for (let e of dropdowns) {
-                if (isValidCurrency($(e).val())) {
+                if (isValidCurrency($(e).val(), 1)) {
                     let from: any = $(e).val();
                     let value: any = $("#input-" + getID(e)).val();
 
@@ -207,9 +251,9 @@ function initInput(): void {
         const dropdown: any = $("#dropdown-" + ID);
         const from: any = dropdown.val();
 
-        if (isValidCurrency(dropdown.val())) {
+        if (isValidCurrency(dropdown.val(), 1)) {
             for (let e of elements) {
-                if (getID(e) !== ID && isValidCurrency($(e).val())) {
+                if (getID(e) !== ID && isValidCurrency($(e).val(), 1)) {
                     let to: any = $(e).val();
 
                     if (from === to)
